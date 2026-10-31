@@ -1,6 +1,6 @@
 {
   "name": "@kroescontrol/supermenu",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Het supermenu van Kroescontrol: \u00e9\u00e9n lijst gezichten en sites, zonder UI en zonder React (prd619 fase B)",
   "type": "module",
   "main": "dist/index.js",
@@ -12,7 +12,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "check": "npm run build && npm test && node scripts/check-dist.mjs",
-    "prepare": "tsc -p tsconfig.json"
+    "prepare": "tsc -p tsconfig.json && node scripts/check-dist.mjs"
   },
   "repository": {
     "type": "git",
