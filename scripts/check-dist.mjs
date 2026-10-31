@@ -3,7 +3,7 @@
 // met backticks of commentaar, export-from en require. Elke specificatie die niet met './' of
 // '../' begint is fout. Recursief over alle .js, .mjs en .d.ts.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import ts from 'typescript';
 
 function bestanden(map) {
@@ -12,7 +12,7 @@ function bestanden(map) {
     return statSync(p).isDirectory() ? bestanden(p) : /\.(m?js|d\.ts)$/.test(n) ? [p] : [];
   });
 }
-export function externeImports(tekst) {
+export function externeImports(tekst, bestand = 'dist/index.js', wortel = 'dist') {
   // Echte boom (AST): commentaar telt niet, haakjes worden uitgepakt, en een import of require
   // waarvan het argument geen letterlijke tekst is, wordt geweigerd: de herkomst staat niet vast.
   const bron = ts.createSourceFile('x.ts', tekst, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -25,6 +25,12 @@ export function externeImports(tekst) {
     const t = letterlijk(n);
     if (t === null) uit.push('<niet-letterlijk>');
     else if (!t.startsWith('./') && !t.startsWith('../')) uit.push(t);
+    else {
+      // Relatief mag alleen binnen dist/ blijven, en nooit via node_modules.
+      const doel = resolve(dirname(bestand), t);
+      const basis = resolve(wortel) + sep;
+      if (!doel.startsWith(basis) || doel.split(sep).includes('node_modules')) uit.push(t);
+    }
   };
   const loop = (n) => {
     if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier) toets(n.moduleSpecifier);
@@ -45,7 +51,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   try { lijst = bestanden(process.argv[2] ?? 'dist'); } catch { lijst = []; }
   if (lijst.length === 0) { console.error('check-dist KON NIET KIJKEN: dist is leeg of ontbreekt'); process.exit(2); }
   let fout = 0;
-  for (const f of lijst) for (const s of externeImports(readFileSync(f, 'utf8'))) { console.error(`FOUT: ${f} importeert '${s}'`); fout++; }
+  for (const f of lijst) for (const s of externeImports(readFileSync(f, 'utf8'), f, process.argv[2] ?? 'dist')) { console.error(`FOUT: ${f} importeert '${s}'`); fout++; }
   console.log(`check-dist: ${lijst.length} bestanden getoetst, ${fout} fouten`);
   process.exit(fout ? 1 : 0);
 }
