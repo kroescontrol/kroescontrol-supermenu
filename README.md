@@ -9,3 +9,13 @@ Bron: prd619 fase B (`airflow/projects/wp_hub/prds/prd619-…`), task900.
 - `typeVoorRol(rol)`: van echte rol naar type.
 
 `npm run check` = build, tests en de poort dat `dist/` niets uit React, de router of de hub importeert.
+
+## Installeren
+
+Publiek op GitHub, geen token nodig (besluit Serge 31-10-2026). Installeer op een vaste versie:
+
+```bash
+npm install github:kroescontrol/kroescontrol-supermenu#v0.1.0
+```
+
+`prepare` bouwt `dist/` bij het installeren. GitHub Packages is bewust niet gekozen: daar vraagt ook een publiek pakket een token.
