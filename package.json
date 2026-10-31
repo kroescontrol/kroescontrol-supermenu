@@ -1,0 +1,17 @@
+{
+  "name": "@kroescontrol/supermenu",
+  "version": "0.1.0",
+  "description": "Het supermenu van Kroescontrol: één lijst gezichten en sites, zonder UI en zonder React (prd619 fase B)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "check": "npm run build && npm test && node scripts/check-dist.mjs"
+  },
+  "publishConfig": { "registry": "https://npm.pkg.github.com" },
+  "repository": { "type": "git", "url": "git+https://github.com/kroescontrol/kc-supermenu.git" },
+  "devDependencies": { "typescript": "^5.6.0", "vitest": "^2.1.0" }
+}
