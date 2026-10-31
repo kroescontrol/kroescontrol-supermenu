@@ -12,6 +12,6 @@
     "check": "npm run build && npm test && node scripts/check-dist.mjs"
   },
   "publishConfig": { "registry": "https://npm.pkg.github.com" },
-  "repository": { "type": "git", "url": "git+https://github.com/kroescontrol/kc-supermenu.git" },
+  "repository": { "type": "git", "url": "git+https://github.com/kroescontrol/kroescontrol-supermenu.git" },
   "devDependencies": { "typescript": "^5.6.0", "vitest": "^2.1.0" }
 }
