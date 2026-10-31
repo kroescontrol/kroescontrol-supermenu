@@ -13,12 +13,31 @@ function bestanden(map) {
   });
 }
 export function externeImports(tekst) {
-  const info = ts.preProcessFile(tekst, true, true);
-  const uit = info.importedFiles.map((f) => f.fileName);
-  // preProcessFile ziet import(`x`) met een template zonder substituties ook; vang de rest grof af:
-  for (const m of tekst.matchAll(/\bimport\s*(?:\/\*[\s\S]*?\*\/\s*)*\(\s*(?:\/\*[\s\S]*?\*\/\s*)*[`'"]([^`'"]+)[`'"]/g)) uit.push(m[1]);
-  for (const m of tekst.matchAll(/\brequire\s*\(\s*[`'"]([^`'"]+)[`'"]/g)) uit.push(m[1]);
-  return [...new Set(uit)].filter((s) => !s.startsWith('./') && !s.startsWith('../'));
+  // Echte boom (AST): commentaar telt niet, haakjes worden uitgepakt, en een import of require
+  // waarvan het argument geen letterlijke tekst is, wordt geweigerd: de herkomst staat niet vast.
+  const bron = ts.createSourceFile('x.ts', tekst, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const uit = [];
+  const letterlijk = (n) => {
+    while (n && ts.isParenthesizedExpression(n)) n = n.expression;
+    return n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) ? n.text : null;
+  };
+  const toets = (n) => {
+    const t = letterlijk(n);
+    if (t === null) uit.push('<niet-letterlijk>');
+    else if (!t.startsWith('./') && !t.startsWith('../')) uit.push(t);
+  };
+  const loop = (n) => {
+    if ((ts.isImportDeclaration(n) || ts.isExportDeclaration(n)) && n.moduleSpecifier) toets(n.moduleSpecifier);
+    else if (ts.isImportEqualsDeclaration(n) && ts.isExternalModuleReference(n.moduleReference)) toets(n.moduleReference.expression);
+    else if (ts.isImportTypeNode(n)) toets(n.argument.literal ?? n.argument);
+    else if (ts.isCallExpression(n)) {
+      const f = n.expression;
+      if (f.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(f) && f.text === 'require')) toets(n.arguments[0]);
+    }
+    ts.forEachChild(n, loop);
+  };
+  loop(bron);
+  return [...new Set(uit)];
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

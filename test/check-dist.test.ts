@@ -13,8 +13,12 @@ const fout = [
   'export { a } from "react-router-dom";',
   'const r = require("react-dom");',
   'import type { X } from "react";',
+  'const x = import(("react"));',
+  'const n = "react"; const x = import(n);',
+  'const r = require(n);',
+  'type T = import("react").X;',
 ];
-const goed = ['import { a } from "./a.js";', 'export * from "../b.js";', 'const s = "react";', '// import "react"'];
+const goed = ['import { a } from "./a.js";', 'export * from "../b.js";', 'const s = "react";', '// import "react"', '// import(`react`)', '/* require("react") */'];
 
 describe('check-dist', () => {
   for (const t of fout) it(`weigert: ${t}`, () => expect(externeImports(t).length).toBeGreaterThan(0));
