@@ -27,3 +27,8 @@ describe('check-dist', () => {
   for (const t of fout) it(`weigert: ${t}`, () => expect(externeImports(t).length).toBeGreaterThan(0));
   for (const t of goed) it(`laat door: ${t}`, () => expect(externeImports(t)).toEqual([]));
 });
+
+describe('check-dist, relatieve grenzen', () => {
+  it('weigert node_modules binnen dist', () => expect(externeImports('import "./node_modules/pkg/index.js";')).not.toEqual([]));
+  it('laat ../ binnen dist door vanuit een submap', () => expect(externeImports('import "../a.js";', 'dist/sub/x.js')).toEqual([]));
+});
