@@ -1,8 +1,9 @@
 // @kroescontrol/supermenu: het Sites-menu als gegevens en regels, zonder UI (prd619).
 // Besluit Serge 01-11-2026 12:48 CET (variant C'): de kop is overal logo / Sites ▾ / Sectie ▾.
 // Dit pakket levert alleen Sites ▾: welke sites iemand ziet, welke de huidige is, en de
-// terugweg naar de hub. Werelden (Team, Bedrijf) en secties zijn van de hub en staan hier niet
-// meer in; die horen in het sectiemenu van de hub.
+// terugweg naar de hub. Secties zijn van de hub en staan hier niet in.
+// Besluit Serge 01-11-2026 14:41 CET (0.4.0): Bedrijf is een eigen site, op <hub>/bedrijf in
+// dezelfde app en met dezelfde inlog. Hub en Bedrijf zijn de twee sites die de hub-app zelf is.
 
 export type OrgRole = 'owner' | 'finance' | 'operations' | 'internal' | 'member' | 'contributor' | 'guest';
 export type Type = 'anoniem' | 'member' | 'medewerker';
@@ -33,13 +34,21 @@ export interface Site {
   minRole?: OrgRole;
 }
 
-// Volgorde = de rolvolgorde: eerst wat iedereen ziet (Hub, Docs), dan Interne docs (internal),
-// Operations-docs (operations), en Website als uitgang naar buiten onderaan.
+// Volgorde (Serge 01-11 14:41): Hub, Bedrijf, Docs, Interne docs, Operations-docs, Website.
+// Eerst de twee sites van de hub-app, dan de docs in rolvolgorde, en Website als uitgang onderaan.
+// Bedrijf vanaf operations: in de hub-config (navigation.ts, sections.ts) hebben precies
+// operations, finance en owner een sectie in Bedrijf (Overzicht en Operations vanaf operations,
+// Finance en Audit vanaf finance, Beheer alleen de owner). Daaronder is Bedrijf leeg.
 // Kleur van het icoon: Operations-docs teal (de sectiekleur van Operations), niet amber (Finance).
 export const SITES: Site[] = [
   {
     id: 'hub', name: 'Hub', description: 'Jouw werkplek', icon: 'LayoutDashboard',
     url: '', iconClassName: 'bg-primary/10 text-primary',
+  },
+  // Bedrijf: neutraal icoon. Bedrijf draagt Finance (amber) én Operations (teal), dus geen van beide.
+  {
+    id: 'bedrijf', name: 'Bedrijf', description: 'Finance, operations en beheer', icon: 'Building2',
+    url: '', iconClassName: 'bg-muted text-foreground', minRole: 'operations',
   },
   // prd619 fase C (Serge 31-10, Telegram 2435): elke docs-site via /home, niet via /.
   {
@@ -62,6 +71,19 @@ export const SITES: Site[] = [
   },
 ];
 
+/** De sites die de hub-app zelf is. Hun adres is hubBasis plus een pad; de rest is extern. */
+export const HUB_SITES: readonly string[] = ['hub', 'bedrijf'];
+
+/** Het pad van Bedrijf binnen de hub. */
+export const BEDRIJF_PAD = '/bedrijf';
+
+const onderBedrijf = (pad: string) => pad === BEDRIJF_PAD || pad.startsWith(BEDRIJF_PAD + '/');
+
+/** Bij welke site van de hub-app een pad hoort: /bedrijf en alles daaronder is Bedrijf, de rest Hub. */
+export function hubSiteVoorPad(pad: string): 'hub' | 'bedrijf' {
+  return onderBedrijf(pad) ? 'bedrijf' : 'hub';
+}
+
 /** Waar je in de hub was: alleen een pad en een label, nooit een id, filter of naam van een persoon. */
 export interface Terugweg {
   /** Pad binnen de hub, bijvoorbeeld /bedrijf/finance/debiteuren. Geen query, geen domein. */
@@ -77,7 +99,7 @@ export interface SitesInvoer {
   heeftMinRol: (min: OrgRole) => boolean;
   /** Het adres van de hub, zonder slash aan het eind. Standaard HUB_BASIS. */
   hubBasis?: string;
-  /** De terugweg naar de hub; alleen gebruikt buiten de hub. */
+  /** De terugweg naar de hub; alleen gebruikt buiten de hub-app (niet op Hub of Bedrijf). */
   terugweg?: Terugweg | null;
   /** Extra sites die een site toevoegt (bijvoorbeeld Maps zodra die bestaat). */
   extra?: Site[];
@@ -86,7 +108,10 @@ export interface SitesInvoer {
 export interface SiteRegel extends Site {
   /** Dit is de site waar het menu nu op staat. */
   aan: boolean;
-  /** Tweede regel bij de hub buiten de hub: "Verder in Finance · Debiteuren". */
+  /**
+   * Tweede regel buiten de hub-app: "Verder in Finance · Debiteuren". Bij Bedrijf als de terugweg
+   * onder /bedrijf ligt en Bedrijf in de lijst staat, anders bij Hub.
+   */
   verder?: string;
 }
 
@@ -99,19 +124,22 @@ export interface SitesUitvoer {
 /** Welke sites in Sites ▾ staan, en welke de huidige is. */
 export function sitesmenu(invoer: SitesInvoer, sites: Site[] = SITES): SitesUitvoer {
   const basis = (invoer.hubBasis ?? HUB_BASIS).replace(/\/+$/, '');
-  const terug = invoer.huidig !== 'hub' && invoer.terugweg && terugwegGeldig(invoer.terugweg) ? invoer.terugweg : null;
+  const terug = !HUB_SITES.includes(invoer.huidig) && invoer.terugweg && terugwegGeldig(invoer.terugweg) ? invoer.terugweg : null;
   const alle = [...sites, ...(invoer.extra ?? [])];
-  const regels: SiteRegel[] = alle
-    .filter((s) => s.id === invoer.huidig || !s.minRole || invoer.heeftMinRol(s.minRole))
-    .map((s) => {
-      const aan = s.id === invoer.huidig;
-      if (s.id !== 'hub') return { ...s, aan };
-      return {
-        ...s, aan,
-        url: basis + (terug ? terug.pad : '/'),
-        ...(terug ? { verder: `Verder in ${terug.label}` } : {}),
-      };
-    });
+  const zichtbaar = alle.filter((s) => s.id === invoer.huidig || !s.minRole || invoer.heeftMinRol(s.minRole));
+  // De terugweg hoort bij de site waar hij ligt; staat Bedrijf er niet in, dan bij Hub (hij gaat niet verloren).
+  const doel = terug && onderBedrijf(terug.pad) && zichtbaar.some((s) => s.id === 'bedrijf') ? 'bedrijf' : 'hub';
+  const start: Record<string, string> = { hub: '/', bedrijf: BEDRIJF_PAD };
+  const regels: SiteRegel[] = zichtbaar.map((s) => {
+    const aan = s.id === invoer.huidig;
+    if (!HUB_SITES.includes(s.id)) return { ...s, aan };
+    const met = terug && s.id === doel;
+    return {
+      ...s, aan,
+      url: basis + (met ? terug.pad : start[s.id]),
+      ...(met ? { verder: `Verder in ${terug.label}` } : {}),
+    };
+  });
   const huidig = alle.find((s) => s.id === invoer.huidig);
   return { label: huidig?.name ?? 'Sites', sites: regels };
 }
