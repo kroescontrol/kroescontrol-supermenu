@@ -163,7 +163,7 @@ export interface Feiten {
 }
 
 /** Het lege cookie: wat elke lezer aanneemt als er niets geldigs staat. */
-export const FEITEN_LEEG: Feiten = { v: 1, ingelogd: false, type: 'anoniem' };
+export const FEITEN_LEEG: Readonly<Feiten> = Object.freeze({ v: 1, ingelogd: false, type: 'anoniem' });
 
 /** De ruwe waarde van één cookie uit een Cookie-header of document.cookie; null als hij er niet staat. */
 export function cookieWaarde(cookie: string | null | undefined, naam: string = COOKIE_NAAM): string | null {
@@ -184,18 +184,23 @@ export function cookieWaarde(cookie: string | null | undefined, naam: string = C
  * Onbekende velden worden genegeerd (een schrijver mag velden dragen die deze lezer niet kent).
  */
 export function leesFeiten(cookie: string | null | undefined): Feiten {
+  return ontleed(cookie) ?? { ...FEITEN_LEEG };
+}
+
+/** De feiten als het cookie geldig is, anders null. */
+function ontleed(cookie: string | null | undefined): Feiten | null {
   const ruw = cookieWaarde(cookie);
-  if (ruw === null || ruw.length > 1024) return FEITEN_LEEG;
+  if (ruw === null || ruw.length > 1024) return null;
   let obj: unknown;
-  try { obj = JSON.parse(ruw); } catch { return FEITEN_LEEG; }
-  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return FEITEN_LEEG;
+  try { obj = JSON.parse(ruw); } catch { return null; }
+  if (typeof obj !== 'object' || obj === null || Array.isArray(obj)) return null;
   const o = obj as Record<string, unknown>;
-  if (o.v !== 1) return FEITEN_LEEG;
-  if (typeof o.ingelogd !== 'boolean') return FEITEN_LEEG;
-  if (typeof o.type !== 'string' || !TYPES.includes(o.type as Type)) return FEITEN_LEEG;
-  if (o.thema !== undefined && (typeof o.thema !== 'string' || !THEMAS.includes(o.thema as Thema))) return FEITEN_LEEG;
-  if (o.taal !== undefined && (typeof o.taal !== 'string' || !TALEN.includes(o.taal as Taal))) return FEITEN_LEEG;
-  if (o.terug !== undefined && !terugwegGeldig(o.terug)) return FEITEN_LEEG;
+  if (o.v !== 1) return null;
+  if (typeof o.ingelogd !== 'boolean') return null;
+  if (typeof o.type !== 'string' || !TYPES.includes(o.type as Type)) return null;
+  if (o.thema !== undefined && (typeof o.thema !== 'string' || !THEMAS.includes(o.thema as Thema))) return null;
+  if (o.taal !== undefined && (typeof o.taal !== 'string' || !TALEN.includes(o.taal as Taal))) return null;
+  if (o.terug !== undefined && !terugwegGeldig(o.terug)) return null;
   const uit: Feiten = { v: 1, ingelogd: o.ingelogd, type: o.type as Type };
   if (o.terug !== undefined) { const t = o.terug as Terugweg; uit.terug = { pad: t.pad, label: t.label }; }
   if (o.thema !== undefined) uit.thema = o.thema as Thema;
@@ -242,17 +247,17 @@ export interface Wijziging {
  * niet geschreven. Geeft null als het resultaat niet geldig of te lang zou zijn.
  */
 export function feitenMet(cookie: string | null | undefined, w: Wijziging): Record<string, unknown> | null {
-  const geldig = leesFeiten(cookie) !== FEITEN_LEEG;
+  const geldig = ontleed(cookie) !== null;
   const uit: Record<string, unknown> = geldig ? { ...(JSON.parse(cookieWaarde(cookie)!) as object) } : { ...FEITEN_LEEG };
   for (const k of ['ingelogd', 'type', 'thema', 'taal'] as const) if (w[k] !== undefined) uit[k] = w[k];
+  // Een bestaande terugweg alleen als pad en label (extra sleutels vallen weg).
+  if (terugwegGeldig(uit.terug)) uit.terug = { pad: uit.terug.pad, label: uit.terug.label };
   if (w.terug === null) delete uit.terug;
-  else if (w.terug !== undefined) {
-    if (terugwegGeldig(w.terug)) uit.terug = { pad: w.terug.pad, label: w.terug.label };
-    else delete uit.terug;
-  }
+  else if (w.terug !== undefined && terugwegGeldig(w.terug)) uit.terug = { pad: w.terug.pad, label: w.terug.label };
+  // Een ongeldige nieuwe terugweg laat de oude staan; de schrijver toetst zelf vooraf met terugwegGeldig.
   if (uit.ingelogd !== true) { uit.ingelogd = false; uit.type = 'anoniem'; delete uit.terug; }
   const tekst = JSON.stringify(uit);
-  if (tekst.length > 1024 || leesFeiten(`${COOKIE_NAAM}=${encodeURIComponent(tekst)}`) === FEITEN_LEEG) return null;
+  if (tekst.length > 1024 || ontleed(`${COOKIE_NAAM}=${encodeURIComponent(tekst)}`) === null) return null;
   return uit;
 }
 

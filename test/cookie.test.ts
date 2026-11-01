@@ -95,11 +95,20 @@ describe('schrijven: feitenMet en feitenCookie', () => {
   it('ongeldig bestaand cookie: begint bij leeg', () => {
     expect(feitenMet('kc_feiten=rommel', { ingelogd: true, type: 'member' })).toEqual({ v: 1, ingelogd: true, type: 'member' });
   });
+  it('een bestaande terugweg wordt teruggebracht tot pad en label', () => {
+    expect(feitenMet(koek({ v: 1, ingelogd: true, type: 'member', terug: { ...t, href: 'x' } }), {})).toEqual({ v: 1, ingelogd: true, type: 'member', terug: t });
+  });
+  it('het lege cookie is bevroren en elke lege lezing is een eigen kopie', () => {
+    const a = leesFeiten(null); a.type = 'medewerker';
+    expect(leesFeiten(null).type).toBe('anoniem');
+    expect(Object.isFrozen(FEITEN_LEEG)).toBe(true);
+  });
   it('niet ingelogd: altijd anoniem en geen terugweg', () => {
     expect(feitenMet(koek({ v: 1, ingelogd: true, type: 'medewerker', terug: t }), { ingelogd: false })).toEqual({ v: 1, ingelogd: false, type: 'anoniem' });
   });
-  it('een ongeldige terugweg wordt niet geschreven; null haalt hem weg', () => {
+  it('een ongeldige terugweg wordt niet geschreven en laat de oude staan; null haalt hem weg', () => {
     expect(feitenMet(null, { ingelogd: true, type: 'member', terug: { pad: '//x', label: 'X' } })).toEqual({ v: 1, ingelogd: true, type: 'member' });
+    expect(feitenMet(koek({ v: 1, ingelogd: true, type: 'member', terug: t }), { terug: { pad: '//x', label: 'X' } })).toEqual({ v: 1, ingelogd: true, type: 'member', terug: t });
     expect(feitenMet(koek({ v: 1, ingelogd: true, type: 'member', terug: t }), { terug: null })).toEqual({ v: 1, ingelogd: true, type: 'member' });
   });
   it('dezelfde lengtemaat als de lezer: een geldig cookie met lange onbekende velden blijft schrijfbaar', () => {
