@@ -102,6 +102,11 @@ describe('schrijven: feitenMet en feitenCookie', () => {
     expect(feitenMet(null, { ingelogd: true, type: 'member', terug: { pad: '//x', label: 'X' } })).toEqual({ v: 1, ingelogd: true, type: 'member' });
     expect(feitenMet(koek({ v: 1, ingelogd: true, type: 'member', terug: t }), { terug: null })).toEqual({ v: 1, ingelogd: true, type: 'member' });
   });
+  it('dezelfde lengtemaat als de lezer: een geldig cookie met lange onbekende velden blijft schrijfbaar', () => {
+    const c = koek({ v: 1, ingelogd: true, type: 'member', later: 'é'.repeat(180) });
+    expect(leesFeiten(c).type).toBe('member');
+    expect(feitenMet(c, {})).not.toBeNull();
+  });
   it('wat feitenMet schrijft, leest leesFeiten terug', () => {
     const w = feitenMet(null, { ingelogd: true, type: 'medewerker', thema: 'light', terug: t })!;
     const tekst = feitenCookie(w, { domein: '.kroescontrol.nl' });

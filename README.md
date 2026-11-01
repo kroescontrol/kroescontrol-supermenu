@@ -22,7 +22,9 @@ logo / Sites ▾ / Sectie ▾, en Sectie ▾ is van de hub. Werelden (Team, Bedr
 
 ### Van 0.2 naar 0.3
 
-`ITEMS`, `supermenu()`, `naamVoor()`, `menuUitCookie()` en het type `Wereld` zijn weg. `typelijst()` neemt nu de
+`ITEMS`, `supermenu()`, `naamVoor()`, `menuUitCookie()` en de types `Wereld`, `Item`, `Invoer` en `Uitvoer` zijn weg.
+Vervangers: `SITES` (type `Site`, zonder `external`, `soort` en `werelden`: elke site behalve de huidige is extern),
+`sitesmenu()` met `SitesInvoer`/`SitesUitvoer`/`SiteRegel`, en `sitesUitCookie()`. `typelijst()` neemt nu de
 huidige site als tweede argument en geeft `{ label, sites }`. Een site die nog 0.2.0 vastpint, blijft werken.
 
 Geschikt voor een Next-build: ESM met `exports`, `sideEffects: false`, geen React, geen router, geen hub-code.

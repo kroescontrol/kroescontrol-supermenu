@@ -252,7 +252,7 @@ export function feitenMet(cookie: string | null | undefined, w: Wijziging): Reco
   }
   if (uit.ingelogd !== true) { uit.ingelogd = false; uit.type = 'anoniem'; delete uit.terug; }
   const tekst = JSON.stringify(uit);
-  if (encodeURIComponent(tekst).length > 1024 || leesFeiten(`${COOKIE_NAAM}=${encodeURIComponent(tekst)}`) === FEITEN_LEEG) return null;
+  if (tekst.length > 1024 || leesFeiten(`${COOKIE_NAAM}=${encodeURIComponent(tekst)}`) === FEITEN_LEEG) return null;
   return uit;
 }
 
@@ -280,6 +280,6 @@ export function terugwegGeldig(t: unknown): t is Terugweg {
   const { pad, label } = t as Record<string, unknown>;
   if (typeof pad !== 'string' || typeof label !== 'string') return false;
   if (!/^\/(?!\/)[A-Za-z0-9\-._~/]{0,199}$/.test(pad)) return false;
-  if (pad.split('/').some((d) => d === '..' || d === '.')) return false;
+  if (pad.includes('//') || pad.split('/').some((d) => d === '..' || d === '.')) return false;
   return /^[\p{L}\p{N} ·&'.,()\-]{1,60}$/u.test(label) && label.trim() === label;
 }

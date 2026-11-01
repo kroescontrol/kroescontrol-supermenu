@@ -94,7 +94,7 @@ describe('item Hub: adres en terugweg', () => {
     expect(hub.verder).toBeUndefined();
     expect(hub.url).toBe(`${HUB_BASIS}/`);
   });
-  for (const pad of ['//evil.example', 'https://evil.example', '/a?b=c', '/a#x', '/a/../b', '/a\\b', 'relatief', '/%2F%2Fevil']) {
+  for (const pad of ['//evil.example', 'https://evil.example', '/a?b=c', '/a#x', '/a/../b', '/a\\b', 'relatief', '/%2F%2Fevil', '/a//b']) {
     it(`een terugweg ${pad} wordt genegeerd (nooit naar buiten)`, () => {
       const hub = sitesmenu({ huidig: 'docs', heeftMinRol: () => true, terugweg: { pad, label: 'X' } }).sites[0];
       expect(hub.url).toBe(`${HUB_BASIS}/`);
