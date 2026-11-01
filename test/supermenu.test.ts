@@ -59,6 +59,13 @@ describe('sitesmenu per rol', () => {
     expect(m.sites[0].url).toBe('https://hub-next.kroescontrol.nl/');
     expect(m.sites[1].url).toBe('https://hub-next.kroescontrol.nl/bedrijf');
   });
+  it('huidig bedrijf zonder rechten: Bedrijf staat er toch, met vinkje, label en geen terugweg', () => {
+    const m = sitesmenu({ huidig: 'bedrijf', heeftMinRol: () => false, terugweg: { pad: '/bedrijf/finance', label: 'Finance' } });
+    expect(m.label).toBe('Bedrijf');
+    expect(ids(m)).toEqual(['hub', 'bedrijf', 'docs', 'website']);
+    expect(m.sites.filter((s) => s.aan).map((s) => s.id)).toEqual(['bedrijf']);
+    expect(m.sites.some((s) => s.verder)).toBe(false);
+  });
   it('hubSiteVoorPad: /bedrijf en daaronder is Bedrijf, de rest Hub', () => {
     expect(hubSiteVoorPad('/bedrijf')).toBe('bedrijf');
     expect(hubSiteVoorPad('/bedrijf/')).toBe('bedrijf');
