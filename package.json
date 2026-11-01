@@ -1,7 +1,7 @@
 {
   "name": "@kroescontrol/supermenu",
-  "version": "0.3.0",
-  "description": "Sites ▾ van Kroescontrol: welke sites iemand ziet, de huidige, en de terugweg naar de hub; zonder UI en zonder React (prd619, C')",
+  "version": "0.4.0",
+  "description": "Sites ▾ van Kroescontrol: welke sites iemand ziet, de huidige, en de terugweg naar de hub; Hub en Bedrijf zijn de hub-app; zonder UI en zonder React (prd619, C')",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
