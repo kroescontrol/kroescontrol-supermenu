@@ -61,6 +61,7 @@ describe('sitesmenu per rol', () => {
   });
   it('hubSiteVoorPad: /bedrijf en daaronder is Bedrijf, de rest Hub', () => {
     expect(hubSiteVoorPad('/bedrijf')).toBe('bedrijf');
+    expect(hubSiteVoorPad('/bedrijf/')).toBe('bedrijf');
     expect(hubSiteVoorPad('/bedrijf/finance/debiteuren')).toBe('bedrijf');
     expect(hubSiteVoorPad('/bedrijfsleven')).toBe('hub');
     expect(hubSiteVoorPad('/team')).toBe('hub');
@@ -127,7 +128,14 @@ describe('item Hub: adres en terugweg', () => {
   it('/bedrijfsleven is geen Bedrijf', () => {
     const m = sitesmenu({ huidig: 'docs', heeftMinRol: () => true, terugweg: { pad: '/bedrijfsleven', label: 'X' } });
     expect(regel(m, 'hub').verder).toBe('Verder in X');
+    expect(regel(m, 'hub').url).toBe(`${HUB_BASIS}/bedrijfsleven`);
+    expect(regel(m, 'bedrijf').url).toBe(`${HUB_BASIS}/bedrijf`);
     expect(regel(m, 'bedrijf').verder).toBeUndefined();
+  });
+  it('terugweg precies /bedrijf hoort bij Bedrijf', () => {
+    const m = sitesmenu({ huidig: 'docs', heeftMinRol: () => true, terugweg: { pad: '/bedrijf', label: 'Bedrijf' } });
+    expect(regel(m, 'bedrijf')).toMatchObject({ url: `${HUB_BASIS}/bedrijf`, verder: 'Verder in Bedrijf' });
+    expect(regel(m, 'hub').verder).toBeUndefined();
   });
   for (const huidig of ['hub', 'bedrijf']) {
     it(`in de hub-app zelf (${huidig}): geen terugweg`, () => {

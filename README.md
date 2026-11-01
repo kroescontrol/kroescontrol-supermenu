@@ -32,7 +32,8 @@ app en met dezelfde inlog. Hub en Bedrijf zijn samen de hub-app (`HUB_SITES`); d
 
 Nieuw: site `bedrijf`, `HUB_SITES`, `BEDRIJF_PAD`, `hubSiteVoorPad()`. Let op voor wie `sites[0]` als Hub las: dat
 klopt nog, maar de terugweg onder `/bedrijf` staat nu bij Bedrijf (index 1) als die in de lijst staat. Zoek op `id`.
-Wie `SITES` zonder de hub filtert als "externe sites", haalt nu ook `bedrijf` weg (`!HUB_SITES.includes(id)`).
+Wie `SITES` filtert als "externe sites": met `id !== 'hub'` blijft Bedrijf staan (met lege `url`), dus filter op
+`!HUB_SITES.includes(id)`.
 
 ### Van 0.2 naar 0.3
 
